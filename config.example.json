@@ -1,0 +1,8 @@
+{
+  "port": 80,
+  "secure": false,
+  "certificates": {
+    "key": "",
+    "cert": ""
+  }
+}
