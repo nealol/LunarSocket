@@ -7,6 +7,7 @@ import logger from '../utils/logger';
 import GiveEmotesPacket from './GiveEmotesPacket';
 import PlayEmotePacket from './PlayEmotePacket';
 import DoEmotePacket from './DoEmotePacket';
+import ConsoleCommand from './ConsoleCommand';
 
 // Outgoing is when a packet is sent by the server to the client
 export class OutgoingPacketHandler extends (EventEmitter as new () => TypedEventEmitter<OutgoingPacketHandlerEvents>) {
@@ -24,8 +25,8 @@ export class OutgoingPacketHandler extends (EventEmitter as new () => TypedEvent
     const Packet = outboundPackets.find((p) => p.id === id);
 
     if (!Packet) {
-      logger.warn('Unknown packet id:', id);
-      this.player.writeToClient(data);
+      // logger.warn('Unknown packet id (outgoing):', id);
+      return this.player.writeToClient(data);
     }
 
     const packet = new Packet(buf);
@@ -48,4 +49,42 @@ type OutgoingPacketHandlerEvents = {
   playEmote: (packet: PlayEmotePacket) => void;
 };
 
-const inboundPackets = [DoEmotePacket];
+// Incoming is when a packet is sent by the client to the server
+export class IncomingPacketHandler extends (EventEmitter as new () => TypedEventEmitter<IncomingPacketHandlerEvents>) {
+  private player: Player;
+
+  public constructor(player: Player) {
+    super();
+    this.player = player;
+  }
+
+  public handle(data: Buffer): void {
+    const buf = new BufWrapper(data);
+
+    const id = buf.readVarInt();
+    const Packet = inboundPackets.find((p) => p.id === id);
+
+    if (!Packet) {
+      logger.warn('Unknown packet id (incoming):', id);
+      return this.player.writeToServer(data);
+    }
+
+    const packet = new Packet(buf);
+    packet.read();
+
+    // There's probably a better way to do this
+    if (packet instanceof DoEmotePacket) {
+      this.emit('doEmote', packet);
+    }
+    if (packet instanceof ConsoleCommand) {
+      this.emit('consoleCommand', packet);
+    }
+  }
+}
+
+type IncomingPacketHandlerEvents = {
+  doEmote: (packet: DoEmotePacket) => void;
+  consoleCommand: (packet: ConsoleCommand) => void;
+};
+
+const inboundPackets = [DoEmotePacket, ConsoleCommand];

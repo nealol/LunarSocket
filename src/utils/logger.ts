@@ -1,6 +1,9 @@
 import * as chalk from 'chalk';
 
 export default {
+  debug(...args) {
+    console.log(chalk.bgGreen(' DEBUG '), ...args);
+  },
   log(...args) {
     console.log(chalk.bgBlue(' INFO '), ...args);
   },

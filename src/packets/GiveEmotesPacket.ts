@@ -18,6 +18,11 @@ export default class GiveEmotesPacket extends Packet<GiveEmotes> {
 
     this.buf.writeVarInt(data.equipped.length);
     for (const emote of data.equipped) this.buf.writeVarInt(emote);
+
+    this.buf.buffer = Buffer.concat([
+      this.buf.buffer,
+      Buffer.from([0x44]), // Don't ask me why I don't fucking know yet
+    ]);
   }
 
   public read(): void {

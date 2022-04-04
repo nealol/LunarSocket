@@ -1,6 +1,5 @@
 import { Server, createServer } from 'node:https';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Server as WebSocketServer } from 'ws';
 
 import config from './utils/config';
@@ -18,8 +17,8 @@ let httpsServer: Server;
 
 if (config.secure) {
   httpsServer = createServer({
-    cert: readFileSync(join(process.cwd(), 'certificates', 'public.cert')),
-    key: readFileSync(join(process.cwd(), 'certificates', 'private.key')),
+    cert: readFileSync(config.certificates.cert),
+    key: readFileSync(config.certificates.key),
   });
 
   httpsServer.listen(config.port);
@@ -28,6 +27,7 @@ if (config.secure) {
 const server = new WebSocketServer({
   server: config.secure ? httpsServer : undefined,
   port: config.secure ? undefined : config.port,
+  path: '/connect',
 });
 
 server.on('listening', () => {
@@ -35,19 +35,30 @@ server.on('listening', () => {
 });
 
 server.on('connection', (socket, request) => {
+  // logger.log(`New connection (addr=${request.socket.remoteAddress})`);
+
   const handshake = {
-    accountType: request.headers['accountType'] as string,
-    version: request.headers['version'] as string,
-    gitCommit: request.headers['gitCommit'] as string,
-    branch: request.headers['branch'] as string,
-    os: request.headers['os'] as string,
+    accountType: request.headers['accounttype'] as string,
     arch: request.headers['arch'] as string,
-    launcherVersion: request.headers['launcherVersion'] as string,
+    Authorization: request.headers['authorization'] as string,
+    branch: request.headers['branch'] as string,
+    clothCloak: request.headers['clothcloak'] as string,
+    gitCommit: request.headers['gitcommit'] as string,
+    hatHeightOffset: request.headers['hatheightoffset'] as string,
+    hwid: request.headers['hwid'] as string,
+    launcherVersion: request.headers['launcherversion'] as string,
+    lunarPlusColor: request.headers['lunarpluscolor'] as string,
+    os: request.headers['os'] as string,
+    playerId: request.headers['playerid'] as string,
+    protocolVersion: request.headers['protocolversion'] as string,
+    showHatsOverHelmet: request.headers['showhatsoverhelmet'] as string,
+    showHatsOverSkinlayer: request.headers['showhatsoverskinlayer'] as string,
     username: request.headers['username'] as string,
-    playerId: request.headers['playerId'] as string,
-    Authorization: request.headers['Authorization'] as string,
-    protocolVersion: request.headers['protocolVersion'] as string,
+    version: request.headers['version'] as string,
   };
+
+  // Ignoring players with older/newer protocol versions
+  if (handshake.protocolVersion !== '5') return socket.close();
 
   // Closing the connection if the player is already connected
   if (connectedPlayers.find((p) => p.uuid === handshake.playerId))
@@ -62,4 +73,8 @@ export function broadcast(data: any): void {
   connectedPlayers.forEach((p) => p.writeToClient(data));
 }
 
-export const connectedPlayers: Player[] = [];
+export function removePlayer(uuid: string): void {
+  connectedPlayers = connectedPlayers.filter((p) => p.uuid !== uuid);
+}
+
+export let connectedPlayers: Player[] = [];
