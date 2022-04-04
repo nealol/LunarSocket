@@ -2,26 +2,29 @@ import BufWrapper from '@minecraft-js/bufwrapper';
 
 import Packet from './Packet';
 
-export default class DoEmotePacket extends Packet<DoEmote> {
-  public static id = 39;
+export default class PlayEmotePacket extends Packet<PlayEmote> {
+  public static id = 51;
 
   public constructor(buf?: BufWrapper) {
     super(buf);
   }
 
-  public write(data: DoEmote): void {
+  public write(data: PlayEmote): void {
     this.buf = new BufWrapper();
-    this.buf.writeVarInt(DoEmotePacket.id); // Packet ID
+    this.buf.writeVarInt(PlayEmotePacket.id); // Packet ID
+    this.buf.writeUUID(data.uuid);
     this.buf.writeInt(data.id);
   }
 
   public read(): void {
     this.data = {
+      uuid: this.buf.readUUID(),
       id: this.buf.readInt(),
     };
   }
 }
 
-interface DoEmote {
+interface PlayEmote {
+  uuid: string;
   id: number;
 }

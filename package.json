@@ -20,8 +20,9 @@
   },
   "homepage": "https://github.com/Solar-Tweaks/SolarSocketTS#readme",
   "dependencies": {
-    "@minecraft-js/bufwrapper": "^1.0.1",
+    "@minecraft-js/bufwrapper": "^1.2.0",
     "chalk": "^4.1.2",
+    "typed-emitter": "^2.1.0",
     "ws": "^8.5.0"
   },
   "devDependencies": {

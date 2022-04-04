@@ -11,32 +11,33 @@ export default class GiveEmotesPacket extends Packet<GiveEmotes> {
 
   public write(data: GiveEmotes): void {
     this.buf = new BufWrapper();
-    this.buf.writeVarint(GiveEmotesPacket.id); // Packet ID
+    this.buf.writeVarInt(GiveEmotesPacket.id); // Packet ID
 
-    this.buf.writeVarint(data.emotes.length);
-    for (const ownedEmote of data.emotes) this.buf.writeVarint(ownedEmote);
+    this.buf.writeVarInt(data.owned.length);
+    for (const emote of data.owned) this.buf.writeVarInt(emote);
 
-    this.buf.writeVarint(data.b.length);
-    for (const b of data.b) this.buf.writeVarint(b);
+    this.buf.writeVarInt(data.equipped.length);
+    for (const emote of data.equipped) this.buf.writeVarInt(emote);
   }
 
   public read(): void {
-    const emotesLength = this.buf.readVarint();
-    const emotes: number[] = [];
-    for (let i = 0; i < emotesLength; i++) emotes.push(this.buf.readVarint());
+    const ownedLength = this.buf.readVarInt();
+    const owned: number[] = [];
+    for (let i = 0; i < ownedLength; i++) owned.push(this.buf.readVarInt());
 
-    const bLength = this.buf.readVarint();
-    const b: number[] = [];
-    for (let i = 0; i < bLength; i++) b.push(this.buf.readVarint());
+    const equippedLength = this.buf.readVarInt();
+    const equipped: number[] = [];
+    for (let i = 0; i < equippedLength; i++)
+      equipped.push(this.buf.readVarInt());
 
     this.data = {
-      emotes,
-      b,
+      owned,
+      equipped,
     };
   }
 }
 
 interface GiveEmotes {
-  emotes: number[];
-  b: number[];
+  owned: number[];
+  equipped: number[];
 }

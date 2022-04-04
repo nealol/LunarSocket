@@ -1,11 +1,11 @@
 import { WebSocket } from 'ws';
 
-import PacketHandler from './packets/handlePacket';
 import logger from './utils/logger';
 import GiveEmotesPacket from './packets/GiveEmotesPacket';
 import { broadcast } from '.';
 import DoEmotePacket from './packets/DoEmotePacket';
 import Packet from './packets/Packet';
+import { OutgoingPacketHandler } from './packets/PacketHandlers';
 
 export default class Player {
   public version: string;
@@ -15,7 +15,7 @@ export default class Player {
 
   private socket: WebSocket;
   private fakeSocket: WebSocket;
-  private packetHandler: PacketHandler;
+  private outgoingPacketHandler: OutgoingPacketHandler;
 
   public constructor(socket: WebSocket, handshake: Handshake) {
     this.version = handshake.version;
@@ -28,7 +28,7 @@ export default class Player {
       'wss://assetserver.lunarclientprod.com/connect',
       { headers: { ...handshake } }
     );
-    this.packetHandler = new PacketHandler(this);
+    this.outgoingPacketHandler = new OutgoingPacketHandler(this);
 
     // Forwarding data
     this.socket.on('message', (data) => {
@@ -38,28 +38,20 @@ export default class Player {
     this.fakeSocket.on('message', (data) => {
       // Trying to handle packet
       try {
-        this.packetHandler.handle(data as Buffer);
+        this.outgoingPacketHandler.handle(data as Buffer);
       } catch (error) {
         logger.error(error);
         this.writeToClient(data);
       }
     });
-  }
 
-  public sendEmotes(): void {
-    const packet = new GiveEmotesPacket();
-    packet.write({
-      emotes: [...this.emotes.owned, ...this.emotes.fake],
-      b: [],
+    this.outgoingPacketHandler.on('giveEmotes', (packet) => {
+      console.log(packet);
     });
-  }
 
-  public doEmote(emote: number): void {
-    const packet = new DoEmotePacket();
-    packet.write({
-      id: emote,
+    this.outgoingPacketHandler.on('playEmote', (packet) => {
+      console.log(packet);
     });
-    broadcast(packet.buf.buffer);
   }
 
   public writeToClient(data: any | Packet): void {
