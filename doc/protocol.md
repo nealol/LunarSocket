@@ -5,7 +5,7 @@
 | 2         | ConsoleCommand | Server   |
 | 3         | Notification   | Client   |
 | 4         | FriendList     | Client   |
-| 5         |                |          |
+| 5         | FriendMessage  | Client   |
 | 6         | JoinServer     | Server   |
 | 7         |                |          |
 | 8         | PlayerInfo     | Client   |
@@ -64,6 +64,15 @@
   offlineMapSize: 'int',
   onlineMap: `Array<{ player: string, unknownDataOne: string, unknownDataTwo: int, unknownDataThree: string }>`
   offlineMap: `Array<{ player: string, unknownDataOne: string, unknownDataTwo: long }>`
+```
+
+## FriendMessage - `5`
+
+```js
+{
+  uuid: 'string',
+  message: 'string'
+}
 ```
 
 ## PlayerInfo - `8`
