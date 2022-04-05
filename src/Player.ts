@@ -19,14 +19,16 @@ export default class Player {
   public username: string;
   public uuid: string;
   public server: string;
+  public color: RealFake<number>;
+  public premium: RealFake<boolean>;
+  public clothCloak: RealFake<boolean>;
+  public plusColor: RealFake<number>;
+
   public emotes: {
-    owned: { owned: number[]; fake: number[] };
-    equipped: { owned: number[]; fake: number[] };
+    owned: OwnedFake<number[]>;
+    equipped: OwnedFake<number[]>;
   };
-  public cosmetics: {
-    owned: { id: number; equipped: boolean }[];
-    fake: { id: number; equipped: boolean }[];
-  };
+  public cosmetics: OwnedFake<{ id: number; equipped: boolean }[]>;
 
   private socket: WebSocket;
   private fakeSocket: WebSocket;
@@ -38,6 +40,10 @@ export default class Player {
     this.username = handshake.username;
     this.uuid = handshake.playerId;
     this.server = '';
+    this.premium = { real: false, fake: true };
+    this.color = { real: 0, fake: 0xa83232 };
+    this.clothCloak = { real: false, fake: true };
+    this.plusColor = { real: 0, fake: 0x3295a8 };
 
     this.emotes = {
       owned: { owned: [], fake: [] },
@@ -124,12 +130,20 @@ export default class Player {
         this.cosmetics.fake = this.cosmetics.fake.filter(
           (c) => !this.cosmetics.owned.find((o) => o.id === c.id)
         );
+        this.premium.real = packet.data.premium;
+        this.color.real = packet.data.color;
+        this.clothCloak.real = packet.data.clothCloak;
+        this.plusColor.real = packet.data.plusColor;
 
         // Sending the owned and fake cosmetics to the client
         const newPacket = new PlayerInfoPacket();
         newPacket.write({
           ...packet.data,
           cosmetics: [...this.cosmetics.fake, ...this.cosmetics.owned],
+          premium: this.premium.fake,
+          color: this.color.fake,
+          clothCloak: this.clothCloak.fake,
+          plusColor: this.plusColor.fake,
         });
         return this.writeToClient(newPacket);
       }
@@ -174,7 +188,6 @@ export default class Player {
     });
 
     this.incomingPacketHandler.on('applyCosmetics', (packet) => {
-      logger.debug(packet.buf.buffer);
       for (const cosmetic of packet.data.cosmetics) {
         this.setCosmeticState(cosmetic.id, cosmetic.equipped);
       }
@@ -185,7 +198,6 @@ export default class Player {
         cosmetics: this.cosmetics.owned,
         update: packet.data.update,
       });
-      logger.debug(_packet.buf.buffer);
     });
 
     // After every listeners are registered sending a hi notification
@@ -234,7 +246,7 @@ export default class Player {
         this.socket.send(data.buf.buffer);
       } else this.socket.send(data);
     } catch (error) {
-      logger.error('Error writing to client', error.message);
+      logger.error('Error writing to client:', error.message);
     }
   }
 
@@ -244,7 +256,7 @@ export default class Player {
         this.fakeSocket.send(data.buf.buffer);
       } else this.fakeSocket.send(data);
     } catch (error) {
-      logger.error('Error writing to server', error.message);
+      logger.error('Error writing to server:', error.message);
     }
   }
 
@@ -278,3 +290,6 @@ interface Handshake {
   username: string;
   version: string;
 }
+
+type RealFake<T> = { real: T; fake: T };
+type OwnedFake<T> = { owned: T; fake: T };

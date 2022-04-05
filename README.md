@@ -7,7 +7,12 @@ Lunar Client <-> Lunar Socket <-> Lunar Servers
 
 It can intercepts and edit the data in the packets.
 
+# Protocol
+
+You can see Lunar Client protocol detailed [here](https://github.com/Solar-Tweaks/LunarSocket/blob/main/protocol.md)
+
 # Installation
+
 ```bash
 $ git clone https://github.com/Solar-Tweaks/LunarSocket # Clone repo
 $ cd LunarSocket # Go to LunarSocket folder
@@ -15,6 +20,7 @@ $ npm install # Install dependencies
 ```
 
 # Configuration
+
 Open the `config.example.json` file and edit the values
 ```jsonc
 {
@@ -30,6 +36,7 @@ Open the `config.example.json` file and edit the values
 Once you have edited the file save it as `config.json` and start the server.
 
 # Start the server
+
 ```bash
 $ npm start
 ```

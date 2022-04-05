@@ -23,7 +23,7 @@ export default class PlayerInfoPacket extends Packet<PlayerInfo> {
     this.buf.writeInt(data.color);
     this.buf.writeBoolean(data.unknownBooleanA);
     this.buf.writeBoolean(data.premium);
-    this.buf.writeBoolean(data.unknownBooleanB);
+    this.buf.writeBoolean(data.clothCloak);
     this.buf.writeBoolean(data.unknownBooleanC);
     this.buf.writeBoolean(data.unknownBooleanD);
 
@@ -34,7 +34,7 @@ export default class PlayerInfoPacket extends Packet<PlayerInfo> {
       this.buf.writeLong(data.unknownHashMap[key]);
     }
 
-    this.buf.writeInt(data.unknownInt);
+    this.buf.writeInt(data.plusColor);
   }
 
   public read(): void {
@@ -51,7 +51,7 @@ export default class PlayerInfoPacket extends Packet<PlayerInfo> {
     const color = this.buf.readInt();
     const unknownBooleanA = this.buf.readBoolean();
     const premium = this.buf.readBoolean();
-    const unknownBooleanB = this.buf.readBoolean();
+    const clothCloak = this.buf.readBoolean();
     const unknownBooleanC = this.buf.readBoolean();
     const unknownBooleanD = this.buf.readBoolean();
 
@@ -63,7 +63,7 @@ export default class PlayerInfoPacket extends Packet<PlayerInfo> {
       unknownHashMap[key] = value;
     }
 
-    const unknownInt = this.buf.readInt();
+    const plusColor = this.buf.readInt();
 
     this.data = {
       uuid,
@@ -71,11 +71,11 @@ export default class PlayerInfoPacket extends Packet<PlayerInfo> {
       color,
       unknownBooleanA,
       premium,
-      unknownBooleanB,
+      clothCloak,
       unknownBooleanC,
       unknownBooleanD,
       unknownHashMap,
-      unknownInt,
+      plusColor,
     };
   }
 }
@@ -91,9 +91,9 @@ interface PlayerInfo {
   color: number;
   unknownBooleanA: boolean;
   premium: boolean;
-  unknownBooleanB: boolean;
+  clothCloak: boolean;
   unknownBooleanC: boolean;
   unknownBooleanD: boolean;
   unknownHashMap: { [key: number]: number };
-  unknownInt: number;
+  plusColor: number;
 }
