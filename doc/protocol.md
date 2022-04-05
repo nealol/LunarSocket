@@ -92,6 +92,15 @@
 }
 ```
 
+## FriendResponse - `21`
+
+```js
+{
+  added: 'boolean',
+  uuid: 'string'
+}
+```
+
 ## PlayEmote - `51`
 
 ```js
