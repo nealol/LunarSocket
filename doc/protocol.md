@@ -119,6 +119,15 @@
 }
 ```
 
+## FriendRequest
+
+```js
+{
+  uuid: 'string',
+  username: 'string'
+}
+```
+
 ## ApplyCosmetics - `20`
 
 ```js
