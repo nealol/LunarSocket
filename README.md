@@ -9,7 +9,7 @@ It can intercepts and edit the data in the packets.
 
 # Protocol
 
-You can see Lunar Client protocol detailed [here](https://github.com/Solar-Tweaks/LunarSocket/blob/main/protocol.md)
+You can see Lunar Client protocol detailed [here](https://github.com/Solar-Tweaks/LunarSocket/blob/main/doc/protocol.md)
 
 # Installation
 
