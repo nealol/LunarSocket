@@ -8,9 +8,23 @@ import GiveEmotesPacket from './GiveEmotesPacket';
 import PlayEmotePacket from './PlayEmotePacket';
 import DoEmotePacket from './DoEmotePacket';
 import ConsoleCommand from './ConsoleCommand';
+import JoinServerPacket from './JoinServerPacket';
+import EquipEmotesPacket from './EquipEmotesPacket';
+import NotificationPacket from './NotificationPacket';
+import PlayerInfoPacket from './PlayerInfoPacket';
+import ApplyCosmeticsPacket from './ApplyCosmeticsPacket';
 
 // Outgoing is when a packet is sent by the server to the client
 export class OutgoingPacketHandler extends (EventEmitter as new () => TypedEventEmitter<OutgoingPacketHandlerEvents>) {
+  public static packetMap = {
+    giveEmotes: GiveEmotesPacket,
+    playEmote: PlayEmotePacket,
+    notification: NotificationPacket,
+    playerInfo: PlayerInfoPacket,
+  };
+
+  public static packets = Object.values(OutgoingPacketHandler.packetMap);
+
   private player: Player;
 
   public constructor(player: Player) {
@@ -22,7 +36,7 @@ export class OutgoingPacketHandler extends (EventEmitter as new () => TypedEvent
     const buf = new BufWrapper(data);
 
     const id = buf.readVarInt();
-    const Packet = outboundPackets.find((p) => p.id === id);
+    const Packet = OutgoingPacketHandler.packets.find((p) => p.id === id);
 
     if (!Packet) {
       // logger.warn('Unknown packet id (outgoing):', id);
@@ -32,25 +46,33 @@ export class OutgoingPacketHandler extends (EventEmitter as new () => TypedEvent
     const packet = new Packet(buf);
     packet.read();
 
-    // There's probably a better way to do this
-    if (packet instanceof GiveEmotesPacket) {
-      this.emit('giveEmotes', packet);
-    }
-    if (packet instanceof PlayEmotePacket) {
-      this.emit('playEmote', packet);
-    }
+    const event = Object.keys(OutgoingPacketHandler.packetMap).find(
+      (key) => OutgoingPacketHandler.packetMap[key] === Packet
+    );
+    // @ts-ignore - event is type of string and not keyof OutgoingPacketHandlerEvents but it works anyway
+    this.emit(event, packet);
   }
 }
-
-const outboundPackets = [GiveEmotesPacket, PlayEmotePacket];
 
 type OutgoingPacketHandlerEvents = {
   giveEmotes: (packet: GiveEmotesPacket) => void;
   playEmote: (packet: PlayEmotePacket) => void;
+  notification: (packet: NotificationPacket) => void;
+  playerInfo: (packet: PlayerInfoPacket) => void;
 };
 
 // Incoming is when a packet is sent by the client to the server
 export class IncomingPacketHandler extends (EventEmitter as new () => TypedEventEmitter<IncomingPacketHandlerEvents>) {
+  public static packetMap = {
+    doEmote: DoEmotePacket,
+    consoleCommand: ConsoleCommand,
+    joinServer: JoinServerPacket,
+    equipEmotes: EquipEmotesPacket,
+    applyCosmetics: ApplyCosmeticsPacket,
+  };
+
+  public static packets = Object.values(IncomingPacketHandler.packetMap);
+
   private player: Player;
 
   public constructor(player: Player) {
@@ -62,29 +84,28 @@ export class IncomingPacketHandler extends (EventEmitter as new () => TypedEvent
     const buf = new BufWrapper(data);
 
     const id = buf.readVarInt();
-    const Packet = inboundPackets.find((p) => p.id === id);
+    const Packet = IncomingPacketHandler.packets.find((p) => p.id === id);
 
     if (!Packet) {
-      logger.warn('Unknown packet id (incoming):', id);
+      // logger.warn('Unknown packet id (incoming):', id, data);
       return this.player.writeToServer(data);
     }
 
     const packet = new Packet(buf);
     packet.read();
 
-    // There's probably a better way to do this
-    if (packet instanceof DoEmotePacket) {
-      this.emit('doEmote', packet);
-    }
-    if (packet instanceof ConsoleCommand) {
-      this.emit('consoleCommand', packet);
-    }
+    const event = Object.keys(IncomingPacketHandler.packetMap).find(
+      (key) => IncomingPacketHandler.packetMap[key] === Packet
+    );
+    // @ts-ignore - event is type of string and not keyof IncomingPacketHandlerEvents but it works anyway
+    this.emit(event, packet);
   }
 }
 
 type IncomingPacketHandlerEvents = {
   doEmote: (packet: DoEmotePacket) => void;
   consoleCommand: (packet: ConsoleCommand) => void;
+  joinServer: (packet: JoinServerPacket) => void;
+  equipEmotes: (packet: EquipEmotesPacket) => void;
+  applyCosmetics: (packet: ApplyCosmeticsPacket) => void;
 };
-
-const inboundPackets = [DoEmotePacket, ConsoleCommand];

@@ -7,16 +7,25 @@ import {
 } from './packets/PacketHandlers';
 import logger from './utils/logger';
 import GiveEmotesPacket from './packets/GiveEmotesPacket';
-import { broadcast, connectedPlayers, removePlayer } from '.';
+import { broadcast, removePlayer } from '.';
 import PlayEmotePacket from './packets/PlayEmotePacket';
+import EquipEmotesPacket from './packets/EquipEmotesPacket';
+import NotificationPacket from './packets/NotificationPacket';
+import PlayerInfoPacket from './packets/PlayerInfoPacket';
+import ApplyCosmeticsPacket from './packets/ApplyCosmeticsPacket';
 
 export default class Player {
   public version: string;
   public username: string;
   public uuid: string;
+  public server: string;
   public emotes: {
     owned: { owned: number[]; fake: number[] };
     equipped: { owned: number[]; fake: number[] };
+  };
+  public cosmetics: {
+    owned: { id: number; equipped: boolean }[];
+    fake: { id: number; equipped: boolean }[];
   };
 
   private socket: WebSocket;
@@ -28,9 +37,15 @@ export default class Player {
     this.version = handshake.version;
     this.username = handshake.username;
     this.uuid = handshake.playerId;
+    this.server = '';
+
     this.emotes = {
-      owned: { owned: [], fake: [56] },
+      owned: { owned: [], fake: [] },
       equipped: { owned: [], fake: [] },
+    };
+    this.cosmetics = {
+      owned: [],
+      fake: [],
     };
 
     this.socket = socket;
@@ -42,6 +57,13 @@ export default class Player {
     );
     this.outgoingPacketHandler = new OutgoingPacketHandler(this);
     this.incomingPacketHandler = new IncomingPacketHandler(this);
+
+    // Yes, we are giving emotes out of nowhere
+    for (let i = 0; i < 150; i++) this.emotes.owned.fake.push(i);
+
+    // Yes, wea re giving cosmetics out of nowhere again
+    for (let i = 0; i < 15; i++)
+      this.cosmetics.fake.push({ id: i, equipped: false });
 
     // Forwarding data
     this.socket.on('message', (data) => {
@@ -90,10 +112,34 @@ export default class Player {
       this.writeToClient(packet);
     });
 
+    this.outgoingPacketHandler.on('notification', (packet) => {
+      this.writeToClient(packet);
+    });
+
+    this.outgoingPacketHandler.on('playerInfo', (packet) => {
+      if (packet.data.uuid === this.uuid) {
+        // Player info for this player
+        this.cosmetics.owned = packet.data.cosmetics;
+        // Removing the owned cosmetics from the fake list
+        this.cosmetics.fake = this.cosmetics.fake.filter(
+          (c) => !this.cosmetics.owned.find((o) => o.id === c.id)
+        );
+
+        // Sending the owned and fake cosmetics to the client
+        const newPacket = new PlayerInfoPacket();
+        newPacket.write({
+          ...packet.data,
+          cosmetics: [...this.cosmetics.fake, ...this.cosmetics.owned],
+        });
+        return this.writeToClient(newPacket);
+      }
+      this.writeToClient(packet);
+    });
+
     this.incomingPacketHandler.on('doEmote', (packet) => {
       if (
         this.emotes.owned.owned.includes(packet.data.id) ||
-        packet.data.id === -1
+        packet.data.id === -1 // -1 is when you cancel/finish the emote
       ) {
         // Player really owns this emote, playing on the real server
         this.writeToServer(packet);
@@ -102,6 +148,68 @@ export default class Player {
         this.playEmote(packet.data.id);
       }
     });
+
+    this.incomingPacketHandler.on('joinServer', (packet) => {
+      this.server = packet.data.ip;
+      this.writeToServer(packet);
+    });
+
+    this.incomingPacketHandler.on('equipEmotes', (packet) => {
+      const owned: number[] = [];
+      const fake: number[] = [];
+      packet.data.emotes.forEach((emote) => {
+        if (this.emotes.owned.owned.includes(emote)) {
+          // Player really has the emote, making sure it's in the owned list
+          owned.push(emote);
+        } else {
+          // Player doesn't have the emote, making sure it's in the fake list
+          fake.push(emote);
+        }
+
+        // Sending the owned emote list to the server
+        const packet = new EquipEmotesPacket();
+        packet.write({ emotes: owned });
+        this.writeToServer(packet);
+      });
+    });
+
+    this.incomingPacketHandler.on('applyCosmetics', (packet) => {
+      logger.debug(packet.buf.buffer);
+      for (const cosmetic of packet.data.cosmetics) {
+        this.setCosmeticState(cosmetic.id, cosmetic.equipped);
+      }
+
+      // Sending the new state of the cosmetics to lunar
+      const _packet = new ApplyCosmeticsPacket();
+      _packet.write({
+        cosmetics: this.cosmetics.owned,
+        update: packet.data.update,
+      });
+      logger.debug(_packet.buf.buffer);
+    });
+
+    // After every listeners are registered sending a hi notification
+    setTimeout(() => {
+      const notification = new NotificationPacket();
+      notification.write({
+        title: '',
+        message: 'Never gonna give you up :D',
+      });
+      this.writeToClient(notification);
+    }, 1000);
+  }
+
+  public setCosmeticState(id: number, state: boolean): void {
+    const owned = this.cosmetics.owned.find((c) => c.id === id);
+    if (owned) {
+      owned.equipped = state;
+      return;
+    }
+    const fake = this.cosmetics.fake.find((c) => c.id === id);
+    if (fake) {
+      fake.equipped = state;
+      return;
+    }
   }
 
   public sendEmotes(): void {
@@ -117,19 +225,27 @@ export default class Player {
   public playEmote(id: number) {
     const packet = new PlayEmotePacket();
     packet.write({ uuid: this.uuid, id });
-    broadcast(packet);
+    broadcast(packet, this.server); // Sending only to people who are on the same server
   }
 
   public writeToClient(data: any | Packet): void {
-    if (data instanceof Packet) {
-      this.socket.send(data.buf.buffer);
-    } else this.socket.send(data);
+    try {
+      if (data instanceof Packet) {
+        this.socket.send(data.buf.buffer);
+      } else this.socket.send(data);
+    } catch (error) {
+      logger.error('Error writing to client', error.message);
+    }
   }
 
   public writeToServer(data: any | Packet): void {
-    if (data instanceof Packet) {
-      this.fakeSocket.send(data.buf.buffer);
-    } else this.fakeSocket.send(data);
+    try {
+      if (data instanceof Packet) {
+        this.fakeSocket.send(data.buf.buffer);
+      } else this.fakeSocket.send(data);
+    } catch (error) {
+      logger.error('Error writing to server', error.message);
+    }
   }
 
   public removePlayer(): void {

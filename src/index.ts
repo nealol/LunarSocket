@@ -30,6 +30,10 @@ const server = new WebSocketServer({
   path: '/connect',
 });
 
+server.on('error', (error) => {
+  logger.error(error);
+});
+
 server.on('listening', () => {
   logger.log(`Server listening on port ${config.port}`);
 });
@@ -69,8 +73,12 @@ server.on('connection', (socket, request) => {
   connectedPlayers.push(player);
 });
 
-export function broadcast(data: any): void {
-  connectedPlayers.forEach((p) => p.writeToClient(data));
+export function broadcast(data: any, server?: string): void {
+  connectedPlayers.forEach((p) => {
+    if (server) {
+      if (server === p.server) p.writeToClient(data);
+    } else p.writeToClient(data);
+  });
 }
 
 export function removePlayer(uuid: string): void {

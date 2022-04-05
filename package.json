@@ -1,14 +1,15 @@
 {
-  "name": "solarsocketts",
+  "name": "lunarsocket",
   "version": "1.0.0",
-  "description": "Solar Tweaks Websocket",
+  "description": "A Lunar Websocket server written in TypeScript",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Solar-Tweaks/SolarSocketTS.git"
+    "url": "git+https://github.com/Solar-Tweaks/LunarSocket.git"
   },
   "keywords": [
     "websocket"
@@ -16,11 +17,11 @@
   "author": "RichardDorian",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/Solar-Tweaks/SolarSocketTS/issues"
+    "url": "https://github.com/Solar-Tweaks/LunarSocket/issues"
   },
-  "homepage": "https://github.com/Solar-Tweaks/SolarSocketTS#readme",
+  "homepage": "https://github.com/Solar-Tweaks/LunarSocket#readme",
   "dependencies": {
-    "@minecraft-js/bufwrapper": "^1.2.0",
+    "@minecraft-js/bufwrapper": "^1.2.2",
     "chalk": "^4.1.2",
     "typed-emitter": "^2.1.0",
     "ws": "^8.5.0"

@@ -12,6 +12,7 @@ export default class ConsoleCommand extends Packet<DoEmote> {
   public write(data: DoEmote): void {
     this.buf = new BufWrapper();
     this.buf.writeVarInt(ConsoleCommand.id); // Packet ID
+
     this.buf.writeString(data.command);
   }
 

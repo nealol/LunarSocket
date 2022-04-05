@@ -2,7 +2,7 @@
   "port": 80,
   "secure": false,
   "certificates": {
-    "key": "",
-    "cert": ""
+    "key": "/path/to/key.key",
+    "cert": "/path/to/cert.crt"
   }
 }
